@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Jam Pelajaran & Jadwal Kurikulum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --paper:#F3F1E7;
+    --paper-2:#EAE6D8;
+    --ink:#20261F;
+    --ink-soft:#565F52;
+    --accent:#2F6F4E;
+    --accent-dark:#1F4D36;
+    --accent2:#B8752E;
+    --line:#D3CDB8;
+    --danger:#AE3B34;
+    --danger-bg:#F5E4E2;
+    --good:#2F6F4E;
+    --good-bg:#E4EDE3;
+    --white:#FBFAF6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Fraunces',serif; font-weight:600; margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button{
+    font-family:'IBM Plex Sans',sans-serif;
+    cursor:pointer;
+    border:1px solid var(--ink);
+    background:var(--white);
+    color:var(--ink);
+    padding:7px 12px;
+    border-radius:3px;
+    font-size:12.5px;
+    font-weight:500;
+    transition:.12s;
+  }
+  button:hover{background:var(--ink); color:var(--white);}
+  button.primary{background:var(--accent); border-color:var(--accent-dark); color:#fff;}
+  button.primary:hover{background:var(--accent-dark);}
+  button.ghost{border-color:var(--line); color:var(--ink-soft);}
+  button.danger-btn{border-color:var(--danger); color:var(--danger); background:none;}
+  button.danger-btn:hover{background:var(--danger); color:#fff;}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  button:disabled:hover{background:var(--white); color:var(--ink);}
+  input, select{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    background:var(--white);
+    color:var(--ink);
+    padding:5px 7px;
+    border-radius:3px;
+    width:100%;
+  }
+  select{font-family:'IBM Plex Sans',sans-serif;}
+  input:focus, select:focus{outline:2px solid var(--accent); outline-offset:1px;}
+
+  /* ===== Header ===== */
+  header{
+    background:var(--accent-dark);
+    color:var(--white);
+    padding:18px 28px;
+    border-bottom:4px solid var(--accent2);
+  }
+  header .top{display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; margin-bottom:14px;}
+  header .eyebrow{
+    text-transform:uppercase; letter-spacing:.14em; font-size:11px; color:#C9DCCC; margin-bottom:6px;
+  }
+  header h1{font-size:22px; color:#fff;}
+  header p.sub{margin:6px 0 0; color:#D8E5D9; font-size:12.5px; max-width:540px;}
+  .header-tools{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .header-tools button{background:transparent; border-color:#9DBB9E; color:#fff;}
+  .header-tools button:hover{background:#fff; color:var(--accent-dark);}
+
+  /* ===== Profile bar ===== */
+  .profile-bar{
+    background:var(--accent-dark); border-top:1px solid #3A6B52;
+    padding:10px 0 0; display:flex; gap:6px; align-items:flex-end; flex-wrap:wrap;
+  }
+  .profile-chip{
+    display:flex; align-items:center; gap:7px; padding:8px 12px;
+    background:#2A5A40; color:#CFE3D2; border-radius:6px 6px 0 0; cursor:pointer;
+    font-size:12.5px; border:1px solid transparent; border-bottom:none;
+    max-width:220px;
+  }
+  .profile-chip .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .profile-chip.active{background:var(--paper); color:var(--ink); font-weight:600; border-color:var(--line);}
+  .profile-chip .del{opacity:.6; font-size:13px;}
+  .profile-chip .del:hover{opacity:1; color:var(--danger);}
+  .profile-chip.add{background:transparent; border:1px dashed #6B9A7C; color:#CFE3D2; font-weight:600;}
+  .profile-chip.add:hover{background:#2A5A40;}
+
+  /* ===== Layout ===== */
+  .layout{display:flex; min-height:calc(100vh - 150px);}
+  nav.tabs{
+    width:220px; flex-shrink:0; background:var(--paper-2);
+    border-right:1px solid var(--line); padding:18px 0;
+  }
+  nav.tabs .tab{
+    display:flex; gap:10px; align-items:flex-start; padding:14px 18px;
+    cursor:pointer; border-left:3px solid transparent; color:var(--ink-soft);
+  }
+  nav.tabs .tab .num{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px;
+    color:var(--ink-soft); border:1px solid var(--line); border-radius:50%;
+    width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--white);
+  }
+  nav.tabs .tab.active{
+    border-left-color:var(--accent2); background:var(--paper); color:var(--ink); font-weight:600;
+  }
+  nav.tabs .tab.active .num{background:var(--accent); border-color:var(--accent-dark); color:#fff;}
+  nav.tabs .tab .label{font-size:13px;}
+  nav.tabs .tab .desc{font-size:11px; color:var(--ink-soft); font-weight:400; margin-top:2px;}
+
+  main{flex:1; padding:26px 30px 60px; max-width:1180px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .panel-head{margin-bottom:18px; border-bottom:1px solid var(--line); padding-bottom:12px;}
+  .panel-head h2{font-size:19px;}
+  .panel-head p{margin:6px 0 0; color:var(--ink-soft); font-size:12.5px; max-width:760px;}
+
+  .toolbar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+  .toolbar .spacer{flex:1;}
+
+  table{width:100%; border-collapse:collapse; background:var(--white); font-size:12.5px;}
+  table.ledger th{
+    text-align:left; background:var(--accent-dark); color:#fff; font-weight:600;
+    padding:8px 9px; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  table.ledger td{padding:5px 7px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.ledger tr:hover td{background:#F7F5EC;}
+  table.ledger tfoot td{font-weight:700; background:var(--paper-2); border-top:2px solid var(--ink); font-family:'IBM Plex Mono',monospace;}
+  table.ledger td.num, table.ledger th.num{text-align:right; font-family:'IBM Plex Mono',monospace;}
+  table.ledger .grp-row td{background:var(--paper-2); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--accent-dark);}
+
+  .status-ok{color:var(--good); background:var(--good-bg); padding:2px 7px; border-radius:3px; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:11.5px;}
+  .status-bad{color:var(--danger); background:var(--danger-bg); padding:2px 7px; border-radius:3px; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:11.5px;}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:4px; padding:16px;}
+  .card h3{font-size:14px; margin-bottom:10px; color:var(--accent-dark);}
+  .kpi{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px;}
+  .kpi-box{background:var(--white); border:1px solid var(--line); border-left:4px solid var(--accent); padding:10px 16px; min-width:150px;}
+  .kpi-box .v{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--accent-dark);}
+  .kpi-box .l{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;}
+
+  .roster-wrap{overflow-x:auto;}
+  table.roster th, table.roster td{border:1px solid var(--line); text-align:center; font-size:11.5px;}
+  table.roster select{width:100%; font-size:11px; padding:3px;}
+  table.roster td.time{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); white-space:nowrap; background:var(--paper-2);}
+
+  .note{background:#FBF3E4; border:1px solid #E6CC9E; border-left:4px solid var(--accent2); padding:10px 14px; font-size:12px; color:#5A4622; border-radius:3px; margin-bottom:14px;}
+  .inline-x{background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px;padding:2px 6px;}
+  .inline-x:hover{background:var(--danger-bg); border-radius:3px;}
+
+  footer.summary{
+    position:sticky; bottom:0; background:var(--ink); color:#fff; padding:9px 30px;
+    display:flex; gap:26px; font-family:'IBM Plex Mono',monospace; font-size:12px; align-items:center; flex-wrap:wrap;
+  }
+  footer.summary b{color:var(--accent2);}
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(32,38,31,.55); z-index:100;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .modal-box{
+    background:var(--white); border:1px solid var(--line); border-radius:6px;
+    width:420px; max-width:92vw; padding:20px 22px; box-shadow:0 12px 32px rgba(0,0,0,.25);
+  }
+  .modal-box h3{font-size:16px; margin-bottom:4px;}
+  .modal-box p.hint{font-size:12px; color:var(--ink-soft); margin:0 0 14px;}
+  .modal-field{margin-bottom:12px;}
+  .modal-field label{display:block; font-size:12px; color:var(--ink-soft); margin-bottom:4px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .modal-box.wide{width:980px; max-width:96vw; max-height:88vh; overflow:auto;}
+  .import-wizard .step-bar{display:flex; gap:4px; margin-bottom:16px;}
+  .import-wizard .step-bar div{flex:1; text-align:center; padding:6px 4px; font-size:11px; border-bottom:3px solid var(--line); color:var(--ink-soft);}
+  .import-wizard .step-bar div.on{border-color:var(--accent2); color:var(--ink); font-weight:600;}
+  .import-preview-wrap{max-height:320px; overflow:auto; border:1px solid var(--line); margin-bottom:14px;}
+  table.preview{width:100%; border-collapse:collapse; font-size:11.5px;}
+  table.preview th, table.preview td{border:1px solid var(--line); padding:4px 6px; white-space:nowrap;}
+  table.preview th{background:var(--accent-dark); color:#fff; position:sticky; top:0; font-weight:600; text-align:left;}
+  table.preview td input, table.preview td select{font-size:11.5px; padding:2px 4px; width:100%; box-sizing:border-box;}
+  table.preview td.num{width:80px;}
+  .map-row th{vertical-align:top;}
+  .map-row select{font-family:'IBM Plex Sans',sans-serif;}
+  .import-row-off{opacity:.4;}
+  .import-row-off td input, .import-row-off td select{text-decoration:line-through;}
+  @media print{
+    header, nav.tabs, .toolbar, footer.summary, .no-print{display:none !important;}
+    .panel{display:none !important;}
+    .panel.print-target{display:block !important;}
+    body{background:#fff;}
+  }
+  #officialPrintArea{display:none;}
+  .op-kop{text-align:center; margin-bottom:6px;}
+  .op-kop-line{font-size:12px; font-weight:600; letter-spacing:.02em;}
+  .op-sekolah{font-size:20px; margin-top:2px;}
+  .op-alamat{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .op-hr{border:none; border-top:3px double #000; margin:10px 0 16px;}
+  .op-title{text-align:center; font-size:16px; text-decoration:underline; margin-bottom:12px;}
+  .op-meta{width:auto; margin-bottom:16px; font-size:12.5px;}
+  .op-meta td{padding:2px 6px; border:none; background:none;}
+  table.op-roster{width:100%; border-collapse:collapse; margin-bottom:30px;}
+  table.op-roster th, table.op-roster td{border:1px solid #000; padding:6px 8px; font-size:11.5px; text-align:center;}
+  table.op-roster th{background:var(--paper-2);}
+  .op-time{font-weight:600; white-space:nowrap;}
+  .op-sign{display:flex; justify-content:space-between; margin-top:20px; font-size:12.5px;}
+  .op-sign-col{width:46%; text-align:center;}
+  .op-sign-space{height:60px;}
+  .op-sign-name{font-weight:700; text-decoration:underline;}
+  .op-sign-nip{font-size:11.5px;}
+  @media print{
+    body.printing-official .layout{display:none !important;}
+    body.printing-official #officialPrintArea{display:block !important; padding:10px 6px;}
+  }
+  .header-brand{display:flex; gap:14px; align-items:flex-start;}
+  .header-logo{width:46px; height:46px; object-fit:contain; flex-shrink:0; margin-top:2px;}
+  .header-credit{font-size:10.5px; color:#B9CCBB; margin-top:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <div class="header-brand">
+      <img class="header-logo" src="https://res.cloudinary.com/bsjwhlor/image/upload/v1785293121/UZM-removebg-preview_gwzkws_1_ajvkjw.png" alt="Logo Usep Zaenal Mutaqin">
+      <div>
+        <div class="eyebrow">Perencanaan Kurikulum · Tahan Perubahan Regulasi</div>
+        <h1>Kalkulator Jam Pelajaran & Jadwal Kurikulum</h1>
+        <p class="sub">Setiap kelas/jenjang disimpan sebagai profil terpisah. Ganti profil kapan saja tanpa kehilangan data profil lain — cocok untuk sekolah yang mengelola SD, SMP, SMA/SMK, atau beberapa fase sekaligus.</p>
+        <div class="header-credit">Dikembangkan oleh Usep Zaenal Mutaqin, S.Pd. · Ver. 13082026</div>
+      </div>
+    </div>
+    <div class="header-tools">
+      <button id="btnExport">⭳ Ekspor Semua Profil (JSON)</button>
+      <button id="btnImportTrigger">⭱ Impor Profil</button>
+      <button id="btnTemplateProfil">⬇ Template Profil (JSON)</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none">
+      <button id="btnImportTable">📄 Impor Tabel dari PDF/Excel</button>
+      <button id="btnTemplateTabel">⬇ Template Tabel (Excel)</button>
+      <input type="file" id="fileImportTable" accept=".xlsx,.xls,.csv,.pdf" style="display:none">
+      <button id="btnPrint">🖨 Cetak Jadwal</button>
+      <button id="btnPrintOfficial">🖨 Cetak Resmi (Kop Surat &amp; TTD)</button>
+      <button id="btnResetData">↺ Reset Data</button>
+    </div>
+  </div>
+  <div class="profile-bar" id="profileBar"></div>
+</header>
+
+<div class="layout">
+  <nav class="tabs" id="tabNav"></nav>
+  <main id="mainArea"></main>
+</div>
+
+<footer class="summary" id="footerSummary"></footer>
+
+<script>
+/* =========================================================================
+   DATA MODEL — MULTI PROFIL
+   Setiap profil (mis. "SD Kelas I", "SMP Kelas VII", "SMK Kelas X TKJ")
+   membawa data mapelnya sendiri, kalender sendiri, roster sendiri, dan
+   jadwal blok sendiri. Semua profil hidup bersamaan dalam memori; berpindah
+   profil hanya mengganti `activeProfileId`, tidak menghapus apa pun.
+   Prinsip pemisahan data-master vs mesin-hitung tetap dipertahankan per
+   profil: saat regulasi berubah, cukup sunting data mapel/kalender profil
+   terkait — rumus di tahap 3-5 tidak perlu disentuh.
+   ========================================================================= */
+
+const KATEGORI = ["Umum/Wajib","Kejuruan","Pilihan","Muatan Lokal"];
+
+const PRESETS = {
+  sd1: {
+    label: "SD/MI Kelas I — Permendikdasmen 13/2025, Lampiran II Tabel 1 (1 tahun = 36 minggu, 1 JP = 35 menit)",
+    menitPerJP: 35,
+    mapel: [
+      {kategori:"Umum/Wajib", nama:"Pendidikan Agama dan Budi Pekerti", intra:108, koku:36},
+      {kategori:"Umum/Wajib", nama:"Pendidikan Pancasila", intra:144, koku:36},
+      {kategori:"Umum/Wajib", nama:"Bahasa Indonesia", intra:252, koku:36},
+      {kategori:"Umum/Wajib", nama:"Matematika", intra:144, koku:36},
+      {kategori:"Umum/Wajib", nama:"PJOK", intra:108, koku:36},
+      {kategori:"Umum/Wajib", nama:"Seni dan Budaya", intra:108, koku:36},
+      {kategori:"Muatan Lokal", nama:"Muatan Lokal", intra:72, koku:0},
+    ]
+  },
+  smp78: {
+    label: "SMP/MTs Kelas VII–VIII — Permendikdasmen 13/2025, Lampiran II Tabel 6 (1 tahun = 36 minggu, 1 JP = 40 menit)",
+    menitPerJP: 40,
+    mapel: [
+      {kategori:"Umum/Wajib", nama:"Pendidikan Agama dan Budi Pekerti", intra:72, koku:36},
+      {kategori:"Umum/Wajib", nama:"Pendidikan Pancasila", intra:72, koku:36},
+      {kategori:"Umum/Wajib", nama:"Bahasa Indonesia", intra:180, koku:36},
+      {kategori:"Umum/Wajib", nama:"Matematika", intra:144, koku:36},
+      {kategori:"Umum/Wajib", nama:"Ilmu Pengetahuan Alam", intra:144, koku:36},
+      {kategori:"Umum/Wajib", nama:"Ilmu Pengetahuan Sosial", intra:108, koku:36},
+      {kategori:"Umum/Wajib", nama:"Bahasa Inggris", intra:108, koku:36},
+      {kategori:"Umum/Wajib", nama:"PJOK", intra:72, koku:36},
+      {kategori:"Umum/Wajib", nama:"Informatika", intra:72, koku:36},
+      {kategori:"Umum/Wajib", nama:"Seni, Budaya, dan Prakarya", intra:72, koku:36},
+      {kategori:"Pilihan", nama:"Koding dan Kecerdasan Artifisial", intra:72, koku:0},
+      {kategori:"Muatan Lokal", nama:"Muatan Lokal", intra:72, koku:0},
+    ]
+  },
+  smk10: {
+    label: "SMK/MAK Kelas X — contoh Jadwal Blok (1 tahun = 36 minggu, 1 JP = 45 menit)",
+    menitPerJP: 45,
+    mapel: [
+      {kategori:"Umum/Wajib", nama:"Pendidikan Agama dan Budi Pekerti", intra:90, koku:18},
+      {kategori:"Umum/Wajib", nama:"Pendidikan Pancasila", intra:54, koku:18},
+      {kategori:"Umum/Wajib", nama:"Bahasa Indonesia", intra:108, koku:36},
+      {kategori:"Umum/Wajib", nama:"PJOK", intra:90, koku:18},
+      {kategori:"Umum/Wajib", nama:"Sejarah", intra:54, koku:18},
+      {kategori:"Umum/Wajib", nama:"Seni Budaya", intra:54, koku:18},
+      {kategori:"Muatan Lokal", nama:"Muatan Lokal", intra:72, koku:0},
+      {kategori:"Kejuruan", nama:"Matematika", intra:108, koku:36},
+      {kategori:"Kejuruan", nama:"Bahasa Inggris", intra:108, koku:36},
+      {kategori:"Kejuruan", nama:"Informatika", intra:108, koku:36},
+      {kategori:"Kejuruan", nama:"Projek IPAS", intra:162, koku:54},
+      {kategori:"Kejuruan", nama:"Dasar-Dasar Program Keahlian", intra:432, koku:0},
+    ]
+  }
+};
+
+function defaultKalender(){
+  return {
+    ganjil: [
+      {bulan:"Juli",     minggu:4, efektif:1},
+      {bulan:"Agustus",  minggu:5, efektif:5},
+      {bulan:"September",minggu:4, efektif:4},
+      {bulan:"Oktober",  minggu:4, efektif:3},
+      {bulan:"November", minggu:5, efektif:4},
+      {bulan:"Desember", minggu:4, efektif:1},
+    ],
+    genap: [
+      {bulan:"Januari",  minggu:4, efektif:4},
+      {bulan:"Februari", minggu:4, efektif:4},
+      {bulan:"Maret",    minggu:5, efektif:3},
+      {bulan:"April",    minggu:4, efektif:2},
+      {bulan:"Mei",      minggu:4, efektif:4},
+      {bulan:"Juni",     minggu:5, efektif:1},
+    ]
+  };
+}
+
+let mapelSeqGlobal = 0;
+function mapelFromPreset(presetKey){
+  const p = PRESETS[presetKey];
+  return JSON.parse(JSON.stringify(p.mapel)).map(m=>({id:"m"+(mapelSeqGlobal++), ...m}));
+}
+
+function newProfile(name, presetKey, targetJPMinggu){
+  const p = PRESETS[presetKey];
+  return {
+    name: name,
+    menitPerJP: p.menitPerJP,
+    targetJPMinggu: targetJPMinggu,
+    roundingStep: 0.5,
+    mapel: mapelFromPreset(presetKey),
+    kalender: defaultKalender(),
+    roster: { hariAktif:["Senin","Selasa","Rabu","Kamis","Jumat"], jumlahSlot:10, sel:{} },
+    blok: { jumlahRombel:2, jumlahMinggu:36, namaA:"Praktik/Produktif", namaB:"Teori", kodeA:"Prod", kodeB:"Te" }
+  };
+}
+
+let profileSeq = 0;
+function nextProfileId(){ return "p" + (profileSeq++); }
+
+/* ===== Pengaturan Cetak Resmi (kop surat & tanda tangan) — berlaku untuk semua
+   profil, disimpan sekali lalu dipakai ulang tiap cetak; hanya Tahun Ajaran/
+   Semester/Tanggal yang biasanya diganti tiap kali cetak. ===== */
+function defaultPrintSettings(){
+  return {
+    kopBaris1: "",
+    kopBaris2: "",
+    namaSekolah: "SDN CITERE",
+    npsn: "",
+    alamatSekolah: "Kabupaten Subang, Jawa Barat",
+    tahunAjaran: "2025/2026",
+    semester: "Ganjil",
+    tempat: "Subang",
+    waliKelasNama: "",
+    waliKelasNip: "",
+    kepsekNama: "Yayat Heryana, S.Pd.SD.",
+    kepsekNip: ""
+  };
+}
+
+let appState = {
+  activeProfileId: null,
+  profiles: {},
+  printSettings: defaultPrintSettings()
+};
+
+/* ===== Preset default target JP/minggu — dipakai konsisten di seed & tambah profil ===== */
+const TARGET_DEFAULTS = { sd1:40, smp78:44, smk10:48 };
+
+/* =========================== PERSISTENSI (localStorage) =========================
+   Data disimpan otomatis ke localStorage browser setiap ada perubahan, supaya
+   refresh/tutup tab TIDAK menghilangkan data. Ekspor JSON tetap tersedia untuk
+   backup/pindah perangkat. Menyimpan appState + kedua penghitung id supaya id
+   baru tidak pernah bentrok dengan id yang sudah tersimpan.
+   ================================================================================ */
+const STORAGE_KEY = "kalkulatorJP_v1";
+let lastSavedAt = null;
+
+function saveToStorage(){
+  try{
+    const payload = { appState, profileSeq, mapelSeqGlobal, savedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    lastSavedAt = payload.savedAt;
+  }catch(err){
+    console.warn("Gagal menyimpan otomatis ke localStorage:", err);
+  }
+}
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const payload = JSON.parse(raw);
+    if(!payload || !payload.appState || !payload.appState.profiles || Object.keys(payload.appState.profiles).length===0) return false;
+    appState = payload.appState;
+    profileSeq = Number(payload.profileSeq)||0;
+    mapelSeqGlobal = Number(payload.mapelSeqGlobal)||0;
+    lastSavedAt = payload.savedAt || null;
+    if(!appState.profiles[appState.activeProfileId]){
+      appState.activeProfileId = Object.keys(appState.profiles)[0];
+    }
+    return true;
+  }catch(err){
+    console.warn("Gagal memuat data tersimpan, mulai dari data contoh:", err);
+    return false;
+  }
+}
+
+(function seed(){
+  const id1 = nextProfileId();
+  appState.profiles[id1] = newProfile("SD Kelas I — 2025/2026", "sd1", TARGET_DEFAULTS.sd1);
+  const id2 = nextProfileId();
+  appState.profiles[id2] = newProfile("SMP Kelas VII — 2025/2026", "smp78", TARGET_DEFAULTS.smp78);
+  const id3 = nextProfileId();
+  appState.profiles[id3] = newProfile("SMK Kelas X — 2025/2026", "smk10", TARGET_DEFAULTS.smk10);
+  appState.activeProfileId = id3;
+})();
+
+/* Coba muat data tersimpan; kalau ada & valid, timpa data contoh di atas */
+loadFromStorage();
+if(!appState.printSettings) appState.printSettings = defaultPrintSettings();
+
+function cp(){ return appState.profiles[appState.activeProfileId]; }
+
+/* ============================ CALC HELPERS ============================ */
+
+function totalMingguEfektif(){
+  const s = cp();
+  const g = s.kalender.ganjil.reduce((s2,b)=>s2+Number(b.efektif||0),0);
+  const p = s.kalender.genap.reduce((s2,b)=>s2+Number(b.efektif||0),0);
+  return g+p;
+}
+function totalMingguKalender(){
+  const s = cp();
+  const g = s.kalender.ganjil.reduce((s2,b)=>s2+Number(b.minggu||0),0);
+  const p = s.kalender.genap.reduce((s2,b)=>s2+Number(b.minggu||0),0);
+  return g+p;
+}
+function roundStep(v, step){
+  if(!step) return v;
+  return Math.round(v/step)*step;
+}
+function jpPerMingguRaw(mapel){
+  const w = totalMingguEfektif() || 1;
+  return {
+    intra: mapel.intra / w,
+    koku: mapel.koku / w,
+    total: (mapel.intra+mapel.koku) / w
+  };
+}
+function jpPerMingguBulat(mapel){
+  const r = jpPerMingguRaw(mapel);
+  const s = cp();
+  return {
+    intra: roundStep(r.intra, s.roundingStep),
+    koku: roundStep(r.koku, s.roundingStep),
+  };
+}
+function fmt(n){
+  if(Number.isInteger(n)) return n.toString();
+  return n.toFixed(1);
+}
+function totalJamTahun(m){ return Number(m.intra||0)+Number(m.koku||0); }
+
+/* =========================== PROFILE BAR ============================= */
+
+function renderProfileBar(){
+  const bar = document.getElementById("profileBar");
+  const ids = Object.keys(appState.profiles);
+  bar.innerHTML = ids.map(id=>{
+    const p = appState.profiles[id];
+    const active = id===appState.activeProfileId;
+    return `<div class="profile-chip ${active?'active':''}" data-profile="${id}">
+      <span class="nm">${p.name}</span>
+      <span class="del" data-delprofile="${id}" title="Hapus profil ini">✕</span>
+    </div>`;
+  }).join("") + `<div class="profile-chip add" id="btnAddProfile">+ Profil Baru</div>`;
+
+  bar.querySelectorAll("[data-profile]").forEach(el=>{
+    el.addEventListener("click", (e)=>{
+      if(e.target.dataset.delprofile) return;
+      appState.activeProfileId = el.dataset.profile;
+      renderAll();
+    });
+  });
+  bar.querySelectorAll("[data-delprofile]").forEach(el=>{
+    el.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.delprofile;
+      const ids2 = Object.keys(appState.profiles);
+      if(ids2.length<=1){ alert("Minimal harus ada satu profil."); return; }
+      openConfirmModal(
+        `Hapus profil "${appState.profiles[id].name}"?`,
+        "Data profil ini tidak bisa dikembalikan kecuali sudah diekspor ke JSON.",
+        ()=>{
+          delete appState.profiles[id];
+          if(appState.activeProfileId===id){
+            appState.activeProfileId = Object.keys(appState.profiles)[0];
+          }
+          renderAll();
+        }
+      );
+    });
+  });
+  document.getElementById("btnAddProfile").addEventListener("click", openAddProfileModal);
+}
+
+/* =========================== MODALS (ganti prompt/confirm) =========================== */
+
+function closeModal(){
+  const el = document.getElementById("modalRoot");
+  if(el) el.remove();
+}
+
+function openConfirmModal(title, hint, onConfirm, confirmLabel){
+  closeModal();
+  const root = document.createElement("div");
+  root.id = "modalRoot";
+  root.className = "modal-backdrop";
+  root.innerHTML = `
+    <div class="modal-box">
+      <h3>${title}</h3>
+      <p class="hint">${hint}</p>
+      <div class="modal-actions">
+        <button class="ghost" id="modalCancel">Batal</button>
+        <button class="danger-btn" id="modalConfirm">${confirmLabel || "Hapus"}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(root);
+  document.getElementById("modalCancel").addEventListener("click", closeModal);
+  root.addEventListener("click", (e)=>{ if(e.target===root) closeModal(); });
+  document.getElementById("modalConfirm").addEventListener("click", ()=>{ closeModal(); onConfirm(); });
+}
+
+function openAddProfileModal(){
+  closeModal();
+  const presetOptions = `<option value="">— tabel kosong —</option>` +
+    Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join("");
+  const root = document.createElement("div");
+  root.id = "modalRoot";
+  root.className = "modal-backdrop";
+  root.innerHTML = `
+    <div class="modal-box">
+      <h3>Profil Baru</h3>
+      <p class="hint">Setiap profil menyimpan data mapel, kalender, roster, dan jadwal bloknya sendiri.</p>
+      <div class="modal-field">
+        <label>Nama profil</label>
+        <input id="modalProfileName" value="Profil Baru" style="font-family:'IBM Plex Sans',sans-serif;">
+      </div>
+      <div class="modal-field">
+        <label>Mulai dari preset</label>
+        <select id="modalPresetSelect">${presetOptions}</select>
+      </div>
+      <div class="modal-field">
+        <label>Target JP/minggu</label>
+        <input id="modalTargetJP" type="number" min="0" value="40">
+      </div>
+      <div class="modal-actions">
+        <button class="ghost" id="modalCancel">Batal</button>
+        <button class="primary" id="modalCreate">Buat Profil</button>
+      </div>
+    </div>`;
+  document.body.appendChild(root);
+
+  const targetInput = document.getElementById("modalTargetJP");
+  const presetSelect = document.getElementById("modalPresetSelect");
+  presetSelect.addEventListener("change", ()=>{
+    const def = TARGET_DEFAULTS[presetSelect.value];
+    if(def!==undefined) targetInput.value = def;
+  });
+
+  document.getElementById("modalCancel").addEventListener("click", closeModal);
+  root.addEventListener("click", (e)=>{ if(e.target===root) closeModal(); });
+  document.getElementById("modalCreate").addEventListener("click", ()=>{
+    const name = document.getElementById("modalProfileName").value.trim() || "Profil Baru";
+    const presetKey = presetSelect.value || null;
+    const targetJP = Math.max(0, Number(targetInput.value)||0);
+    const id = nextProfileId();
+    if(presetKey){
+      appState.profiles[id] = newProfile(name, presetKey, targetJP);
+    } else {
+      appState.profiles[id] = {
+        name, menitPerJP:45, targetJPMinggu:targetJP, roundingStep:0.5,
+        mapel: [], kalender: defaultKalender(),
+        roster: { hariAktif:["Senin","Selasa","Rabu","Kamis","Jumat"], jumlahSlot:10, sel:{} },
+        blok: { jumlahRombel:2, jumlahMinggu:36, namaA:"Praktik/Produktif", namaB:"Teori", kodeA:"Prod", kodeB:"Te" }
+      };
+    }
+    appState.activeProfileId = id;
+    closeModal();
+    renderAll();
+  });
+}
+
+/* =========================== IMPOR TABEL DARI PDF/EXCEL ===========================
+   Alih-alih mengetik ulang tabel struktur kurikulum Permendikdasmen tiap ada revisi,
+   file .xlsx/.xls/.csv/.pdf bisa dibaca langsung. Untuk Excel/CSV, pembacaan tabelnya
+   akurat (pakai SheetJS). Untuk PDF, teks diekstrak lalu baris/kolomnya disusun ulang
+   berdasarkan posisi (pakai pdf.js) — ini PERKIRAAN, bukan pembacaan tabel yang pasti
+   rapi, karena PDF tidak menyimpan struktur tabel secara eksplisit. Karena itu alurnya
+   dua tahap: (1) baca file & tentukan baris judul/data, (2) petakan kolom + pratinjau
+   yang bisa dikoreksi sebelum benar-benar diimpor. Tidak mendukung PDF hasil scan
+   (gambar) karena tidak ada lapisan teks untuk diekstrak.
+   ==================================================================================== */
+
+let importWiz = {
+  phase: "rows",       // "rows" | "mapping"
+  pdfMode: false,
+  fileName: "",
+  rawRows: [],          // array-of-arrays mentah dari file
+  headerRowIdx: 0,
+  dataStartRowIdx: 1,
+  colMap: [],           // per kolom: 'skip'|'nama'|'kategori'|'intra'|'koku'|'total'
+  rowsData: [],          // hasil normalisasi: {nama,kategori,intra,koku,include}
+  target: { mode:"replace", newName:"Profil dari Impor", menitPerJP:45, targetJP:40 }
+};
+
+function parseExcelFile(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const wb = XLSX.read(e.target.result, {type:"array"});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:false});
+        resolve(rows.map(r=>r.map(c=>String(c==null?"":c))));
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = ()=>reject(new Error("Gagal membaca file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function parsePdfFile(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  const allRows = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items
+      .map(it=>({str:it.str, x:it.transform[4], y:it.transform[5]}))
+      .filter(it=>it.str.trim()!=="");
+    if(items.length===0) continue;
+    items.sort((a,b)=> b.y-a.y || a.x-b.x);
+    const lines = [];
+    let curY = null, curLine = [];
+    const Y_TOL = 3;
+    items.forEach(it=>{
+      if(curY===null || Math.abs(it.y-curY)>Y_TOL){
+        if(curLine.length) lines.push(curLine);
+        curLine = [it]; curY = it.y;
+      } else {
+        curLine.push(it);
+      }
+    });
+    if(curLine.length) lines.push(curLine);
+    const GAP = 12; // jarak-x (pt) dianggap batas kolom baru
+    lines.forEach(line=>{
+      line.sort((a,b)=>a.x-b.x);
+      const cells = [];
+      let cur = line[0].str, lastX = line[0].x;
+      for(let i=1;i<line.length;i++){
+        const gap = line[i].x - lastX;
+        if(gap > GAP){ cells.push(cur.trim()); cur = line[i].str; }
+        else { cur += line[i].str; }
+        lastX = line[i].x;
+      }
+      cells.push(cur.trim());
+      allRows.push(cells);
+    });
+  }
+  return allRows;
+}
+
+/* =========================== TEMPLATE UNDUHAN ===========================
+   Dua file contoh siap-isi supaya format yang diharapkan tidak perlu ditebak:
+   (1) template-impor-profil.json — cocok langsung dengan tombol "Impor Profil".
+   (2) template-impor-tabel-kurikulum.xlsx — kolomnya sudah sesuai dengan yang
+       ditebak otomatis oleh wizard "Impor Tabel dari PDF/Excel".
+   ==================================================================================== */
+
+function downloadProfileTemplate(){
+  const template = {
+    _petunjuk: "Ganti isi di bawah sesuai kebutuhan, lalu impor lewat tombol 'Impor Profil'. Field wajib: name, mapel (array kategori/nama/intra/koku), kalender (ganjil & genap, masing-masing 6 baris bulan). Field guru/ruang/roster/blok boleh dikosongkan/dihapus — akan diisi otomatis dengan nilai default.",
+    name: "Nama Profil/Kelas Baru",
+    menitPerJP: 35,
+    targetJPMinggu: 40,
+    roundingStep: 0.5,
+    mapel: [
+      { kategori:"Umum/Wajib", nama:"Contoh Mata Pelajaran 1", guru:"", ruang:"", intra:108, koku:36 },
+      { kategori:"Umum/Wajib", nama:"Contoh Mata Pelajaran 2", guru:"", ruang:"", intra:72, koku:18 },
+      { kategori:"Muatan Lokal", nama:"Contoh Muatan Lokal", guru:"", ruang:"", intra:72, koku:0 },
+    ],
+    kalender: defaultKalender(),
+    roster: { hariAktif:["Senin","Selasa","Rabu","Kamis","Jumat"], jumlahSlot:10, sel:{} },
+    blok: { jumlahRombel:2, jumlahMinggu:36, namaA:"Praktik/Produktif", namaB:"Teori", kodeA:"Prod", kodeB:"Te" }
+  };
+  const blob = new Blob([JSON.stringify(template, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "template-impor-profil.json";
+  a.click();
+}
+
+function downloadTableTemplate(){
+  if(typeof XLSX === "undefined"){
+    alert("Pustaka pembuat Excel belum termuat (perlu koneksi internet). Coba lagi sebentar.");
+    return;
+  }
+  const rows = [
+    ["Mata Pelajaran", "Kategori", "JP Intra/Tahun", "JP Kokurikuler/Tahun"],
+    ["Contoh: Pendidikan Pancasila", "Umum/Wajib", 54, 18],
+    ["Contoh: Matematika", "Umum/Wajib", 108, 36],
+    ["Contoh: Muatan Lokal", "Muatan Lokal", 72, 0],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:32},{wch:16},{wch:16},{wch:20}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Template");
+  XLSX.writeFile(wb, "template-impor-tabel-kurikulum.xlsx");
+}
+
+function guessHeaderRowIdx(rows){
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    if(/mata\s*pelajaran|mapel/i.test(rows[i].join(" "))) return i;
+  }
+  return 0;
+}
+
+async function handleImportTableFile(file){
+  try{
+    const ext = file.name.split(".").pop().toLowerCase();
+    let rows = [];
+    importWiz.pdfMode = (ext==="pdf");
+    if(ext==="pdf"){
+      if(typeof pdfjsLib==="undefined"){ alert("Pustaka pembaca PDF gagal dimuat. Periksa koneksi internet lalu coba lagi."); return; }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      rows = await parsePdfFile(file);
+    } else if(["xlsx","xls","csv"].includes(ext)){
+      if(typeof XLSX==="undefined"){ alert("Pustaka pembaca Excel gagal dimuat. Periksa koneksi internet lalu coba lagi."); return; }
+      rows = await parseExcelFile(file);
+    } else {
+      alert("Format file tidak didukung. Gunakan .xlsx, .xls, .csv, atau .pdf.");
+      return;
+    }
+    rows = rows.filter(r=>r.some(c=>String(c).trim()!==""));
+    if(rows.length===0){
+      alert("Tidak ada teks/tabel yang bisa dibaca dari file ini. Kalau ini PDF hasil scan (gambar), pembacaan otomatis tidak didukung — gunakan sumber Excel/Word aslinya, atau isi manual di panel Data Mapel.");
+      return;
+    }
+    importWiz.fileName = file.name;
+    importWiz.rawRows = rows;
+    importWiz.headerRowIdx = guessHeaderRowIdx(rows);
+    importWiz.dataStartRowIdx = importWiz.headerRowIdx + 1;
+    importWiz.phase = "rows";
+    openImportWizardModal();
+  }catch(err){
+    console.error(err);
+    alert("Gagal membaca file: " + err.message);
+  }
+}
+
+function buildColMapGuess(){
+  const header = importWiz.rawRows[importWiz.headerRowIdx] || [];
+  const sample = importWiz.rawRows.slice(importWiz.headerRowIdx, importWiz.headerRowIdx+30);
+  const colCount = Math.max(header.length, ...sample.map(r=>r.length), 1);
+  const map = [];
+  let hasNama=false, hasIntra=false, hasKoku=false;
+  for(let c=0;c<colCount;c++){
+    const label = (header[c]||"").toLowerCase();
+    let field = "skip";
+    if(/mata\s*pelajaran|^mapel$|nama\s*mapel|nama\s*mata/.test(label)){ field="nama"; hasNama=true; }
+    else if(/kategori|kelompok/.test(label)){ field="kategori"; }
+    else if(/intra/.test(label)){ field="intra"; hasIntra=true; }
+    else if(/koku|projek|p5|kokurikuler/.test(label)){ field="koku"; hasKoku=true; }
+    map.push(field);
+  }
+  if(!hasNama && colCount>0) map[0] = "nama";
+  if(!hasIntra && !hasKoku){
+    for(let c=0;c<colCount;c++){
+      if(map[c]==="skip" && /jp|jam|alokasi|jumlah/.test((header[c]||"").toLowerCase())){ map[c]="total"; break; }
+    }
+  }
+  importWiz.colMap = map;
+}
+
+function parseImportNum(v){
+  if(v==null) return 0;
+  const cleaned = String(v).replace(/[^\d,.\-]/g,"").replace(",",".");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+function guessKategoriFromText(v){
+  const s = (v||"").toLowerCase();
+  if(/wajib|umum/.test(s)) return "Umum/Wajib";
+  if(/kejuruan/.test(s)) return "Kejuruan";
+  if(/pilihan/.test(s)) return "Pilihan";
+  if(/lokal/.test(s)) return "Muatan Lokal";
+  return null;
+}
+
+function buildNormalizedRows(){
+  const rows = importWiz.rawRows.slice(importWiz.dataStartRowIdx);
+  const map = importWiz.colMap;
+  importWiz.rowsData = rows.map(r=>{
+    let nama="", kategori=null, intra=0, koku=0, total=null;
+    map.forEach((field,c)=>{
+      const val = r[c]!==undefined ? r[c] : "";
+      if(field==="nama" && !nama) nama = String(val).trim();
+      else if(field==="kategori" && !kategori) kategori = guessKategoriFromText(val) || (String(val).trim()||null);
+      else if(field==="intra") intra = parseImportNum(val);
+      else if(field==="koku") koku = parseImportNum(val);
+      else if(field==="total") total = parseImportNum(val);
+    });
+    if(total!==null && intra===0 && koku===0) intra = total;
+    return { nama, kategori: kategori || "Umum/Wajib", intra, koku, include: !!nama };
+  }).filter(row => row.nama || row.intra || row.koku);
+}
+
+function openImportWizardModal(){
+  closeModal();
+  const root = document.createElement("div");
+  root.id = "modalRoot";
+  root.className = "modal-backdrop";
+  const box = document.createElement("div");
+  box.className = "modal-box wide import-wizard";
+  box.innerHTML = importWiz.phase==="rows" ? renderImportRowsPhase() : renderImportMappingPhase();
+  root.appendChild(box);
+  document.body.appendChild(root);
+  root.addEventListener("click", (e)=>{ if(e.target===root) closeModal(); });
+  wireImportWizardEvents(box);
+}
+
+function renderImportRowsPhase(){
+  const rows = importWiz.rawRows;
+  const maxShow = Math.min(rows.length, 40);
+  const colCount = Math.max(1, ...rows.slice(0,maxShow).map(r=>r.length));
+  let head = `<tr><th>#</th>${Array.from({length:colCount},(_,i)=>`<th>Kolom ${i+1}</th>`).join("")}</tr>`;
+  let body = "";
+  for(let i=0;i<maxShow;i++){
+    const r = rows[i];
+    const isHeader = i===importWiz.headerRowIdx;
+    const isSkipped = i < importWiz.dataStartRowIdx && !isHeader;
+    body += `<tr style="${isHeader?'background:#EAE6D8;font-weight:600;':''}${isSkipped?'opacity:.4;':''}">
+      <td class="mono">${i+1}</td>
+      ${Array.from({length:colCount},(_,c)=>`<td>${(r[c]||"").toString().replace(/</g,"&lt;")}</td>`).join("")}
+    </tr>`;
+  }
+  return `
+    <div class="step-bar"><div class="on">1 · Baca File</div><div>2 · Petakan Kolom &amp; Impor</div></div>
+    <h3>Atur Baris Tabel</h3>
+    <p class="hint">File: <b>${importWiz.fileName}</b> — ${rows.length} baris terbaca.
+      ${importWiz.pdfMode ? ' Hasil baca PDF bersifat perkiraan (kolom dipisah berdasarkan jarak antar teks) — periksa dan perbaiki di langkah berikut kalau ada kolom yang kurang rapi.' : ''}
+      Tentukan baris mana yang menjadi <b>judul kolom</b>, dan data dimulai dari baris ke berapa (baris judul dokumen/keterangan sebelum tabel bisa dilewati).</p>
+    <div class="modal-field" style="display:flex; gap:16px;">
+      <div><label>Baris ke- adalah judul kolom</label><input id="impHeaderRow" type="number" min="1" value="${importWiz.headerRowIdx+1}" style="width:110px;"></div>
+      <div><label>Data mulai dari baris ke-</label><input id="impDataRow" type="number" min="1" value="${importWiz.dataStartRowIdx+1}" style="width:110px;"></div>
+    </div>
+    <div class="import-preview-wrap"><table class="preview"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    <div class="modal-actions">
+      <button class="ghost" id="modalCancel">Batal</button>
+      <button class="primary" id="impNextBtn">Lanjut: Petakan Kolom →</button>
+    </div>
+  `;
+}
+
+function renderImportMappingPhase(){
+  const header = importWiz.rawRows[importWiz.headerRowIdx] || [];
+  const colCount = importWiz.colMap.length;
+  const fieldOptions = [
+    ["skip","— abaikan —"], ["nama","Nama Mata Pelajaran"], ["kategori","Kategori"],
+    ["intra","JP Intra/Tahun"], ["koku","JP Kokurikuler/Tahun"], ["total","Total JP/Tahun (→ Intra)"]
+  ];
+  let mapHead = "<tr>";
+  for(let c=0;c<colCount;c++){
+    mapHead += `<th>
+      <div style="font-weight:400;font-size:10.5px;color:#D8E5D9;margin-bottom:3px;">${(header[c]||"Kolom "+(c+1)).toString().replace(/</g,"&lt;")}</div>
+      <select data-colmap="${c}">${fieldOptions.map(([v,l])=>`<option value="${v}" ${importWiz.colMap[c]===v?"selected":""}>${l}</option>`).join("")}</select>
+    </th>`;
+  }
+  mapHead += "</tr>";
+
+  const included = importWiz.rowsData.filter(r=>r.include).length;
+  const prevHead = `<tr><th style="width:30px;"></th><th>Nama Mapel</th><th>Kategori</th><th class="num">Intra/Th</th><th class="num">Koku/Th</th></tr>`;
+  const prevBody = importWiz.rowsData.map((row,i)=>`
+    <tr class="${row.include?'':'import-row-off'}">
+      <td style="text-align:center;"><input type="checkbox" data-rowtoggle="${i}" ${row.include?"checked":""}></td>
+      <td><input data-rowfield="nama" data-rowidx="${i}" value="${row.nama.replace(/"/g,"&quot;")}" style="font-family:'IBM Plex Sans',sans-serif;"></td>
+      <td><select data-rowfield="kategori" data-rowidx="${i}">${KATEGORI.map(k=>`<option ${k===row.kategori?"selected":""}>${k}</option>`).join("")}</select></td>
+      <td class="num"><input data-rowfield="intra" data-rowidx="${i}" type="number" min="0" step="1" value="${row.intra}"></td>
+      <td class="num"><input data-rowfield="koku" data-rowidx="${i}" type="number" min="0" step="1" value="${row.koku}"></td>
+    </tr>`).join("");
+
+  return `
+    <div class="step-bar"><div>1 · Baca File</div><div class="on">2 · Petakan Kolom &amp; Impor</div></div>
+    <h3>Petakan Kolom</h3>
+    <p class="hint">Tentukan kolom mana berisi apa — sudah ditebak otomatis dari judul kolom, koreksi kalau kurang tepat. Pratinjau di bawah mengikuti pemetaan ini; hapus centang pada baris yang tidak perlu diimpor, atau sunting langsung nilainya.</p>
+    <div class="import-preview-wrap" style="max-height:76px;"><table class="preview map-row"><thead>${mapHead}</thead></table></div>
+    <h3 style="margin-top:14px;">Pratinjau Data (${included} dari ${importWiz.rowsData.length} baris akan diimpor)</h3>
+    <div class="import-preview-wrap"><table class="preview"><thead>${prevHead}</thead><tbody>${prevBody}</tbody></table></div>
+
+    <h3 style="margin-top:14px;">Tujuan Impor</h3>
+    <div class="modal-field">
+      <label style="display:inline;"><input type="radio" name="impTarget" value="replace" ${importWiz.target.mode==="replace"?"checked":""}> Timpa data mapel profil aktif (<b>${cp().name}</b>)</label><br>
+      <label style="display:inline;"><input type="radio" name="impTarget" value="append" ${importWiz.target.mode==="append"?"checked":""}> Tambahkan ke mapel profil aktif (data lama tetap ada)</label><br>
+      <label style="display:inline;"><input type="radio" name="impTarget" value="new" ${importWiz.target.mode==="new"?"checked":""}> Buat profil baru dari hasil impor</label>
+    </div>
+    <div class="modal-field" id="impNewProfileFields" style="${importWiz.target.mode==="new"?"":"display:none;"}">
+      <label>Nama profil baru</label>
+      <input id="impNewName" value="${importWiz.target.newName}" style="font-family:'IBM Plex Sans',sans-serif;">
+      <div style="display:flex; gap:16px; margin-top:8px;">
+        <div><label>Menit per JP</label><input id="impNewMenit" type="number" min="1" value="${importWiz.target.menitPerJP}" style="width:90px;"></div>
+        <div><label>Target JP/minggu</label><input id="impNewTarget" type="number" min="0" value="${importWiz.target.targetJP}" style="width:90px;"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="ghost" id="modalCancel">Batal</button>
+      <button class="ghost" id="impBackBtn">← Kembali</button>
+      <button class="primary" id="impConfirmBtn">Impor ${included} Mapel</button>
+    </div>
+  `;
+}
+
+function wireImportWizardEvents(box){
+  const cancelBtn = box.querySelector("#modalCancel");
+  if(cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+  if(importWiz.phase==="rows"){
+    const hInput = box.querySelector("#impHeaderRow");
+    const dInput = box.querySelector("#impDataRow");
+    const refresh = ()=>{
+      importWiz.headerRowIdx = Math.max(0, (Number(hInput.value)||1)-1);
+      importWiz.dataStartRowIdx = Math.max(importWiz.headerRowIdx+1, (Number(dInput.value)||importWiz.headerRowIdx+2)-1);
+      openImportWizardModal();
+    };
+    hInput.addEventListener("change", refresh);
+    dInput.addEventListener("change", refresh);
+    box.querySelector("#impNextBtn").addEventListener("click", ()=>{
+      importWiz.headerRowIdx = Math.max(0, (Number(hInput.value)||1)-1);
+      importWiz.dataStartRowIdx = Math.max(importWiz.headerRowIdx+1, (Number(dInput.value)||importWiz.headerRowIdx+2)-1);
+      buildColMapGuess();
+      buildNormalizedRows();
+      importWiz.phase = "mapping";
+      openImportWizardModal();
+    });
+    return;
+  }
+
+  // phase === "mapping"
+  box.querySelectorAll("[data-colmap]").forEach(sel=>{
+    sel.addEventListener("change", ()=>{
+      importWiz.colMap[Number(sel.dataset.colmap)] = sel.value;
+      buildNormalizedRows();
+      openImportWizardModal();
+    });
+  });
+  box.querySelectorAll("[data-rowtoggle]").forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      importWiz.rowsData[Number(cb.dataset.rowtoggle)].include = cb.checked;
+      openImportWizardModal();
+    });
+  });
+  box.querySelectorAll("[data-rowfield]").forEach(el=>{
+    el.addEventListener(el.tagName==="SELECT" ? "change" : "input", ()=>{
+      const idx = Number(el.dataset.rowidx);
+      const field = el.dataset.rowfield;
+      if(field==="intra" || field==="koku") importWiz.rowsData[idx][field] = Math.max(0, Number(el.value)||0);
+      else importWiz.rowsData[idx][field] = el.value;
+    });
+  });
+  box.querySelectorAll('input[name="impTarget"]').forEach(r=>{
+    r.addEventListener("change", ()=>{
+      importWiz.target.mode = r.value;
+      box.querySelector("#impNewProfileFields").style.display = r.value==="new" ? "" : "none";
+    });
+  });
+  const nameI = box.querySelector("#impNewName");
+  if(nameI) nameI.addEventListener("input", ()=>{ importWiz.target.newName = nameI.value; });
+  const menitI = box.querySelector("#impNewMenit");
+  if(menitI) menitI.addEventListener("input", ()=>{ importWiz.target.menitPerJP = Math.max(1, Number(menitI.value)||45); });
+  const targetI = box.querySelector("#impNewTarget");
+  if(targetI) targetI.addEventListener("input", ()=>{ importWiz.target.targetJP = Math.max(0, Number(targetI.value)||0); });
+
+  box.querySelector("#impBackBtn").addEventListener("click", ()=>{ importWiz.phase = "rows"; openImportWizardModal(); });
+  box.querySelector("#impConfirmBtn").addEventListener("click", confirmImportWizard);
+}
+
+function confirmImportWizard(){
+  const chosen = importWiz.rowsData.filter(r=>r.include && r.nama.trim()!=="");
+  if(chosen.length===0){ alert("Tidak ada baris yang dipilih untuk diimpor."); return; }
+  const newMapel = chosen.map(r=>({
+    id: "m"+(mapelSeqGlobal++),
+    kategori: KATEGORI.includes(r.kategori) ? r.kategori : "Umum/Wajib",
+    nama: r.nama.trim(),
+    guru: "",
+    ruang: "",
+    intra: Math.max(0, Number(r.intra)||0),
+    koku: Math.max(0, Number(r.koku)||0)
+  }));
+
+  const doImport = ()=>{
+    if(importWiz.target.mode==="new"){
+      const id = nextProfileId();
+      appState.profiles[id] = {
+        name: importWiz.target.newName.trim() || "Profil dari Impor",
+        menitPerJP: Math.max(1, Number(importWiz.target.menitPerJP)||45),
+        targetJPMinggu: Math.max(0, Number(importWiz.target.targetJP)||0),
+        roundingStep: 0.5,
+        mapel: newMapel,
+        kalender: defaultKalender(),
+        roster: { hariAktif:["Senin","Selasa","Rabu","Kamis","Jumat"], jumlahSlot:10, sel:{} },
+        blok: { jumlahRombel:2, jumlahMinggu:36, namaA:"Praktik/Produktif", namaB:"Teori", kodeA:"Prod", kodeB:"Te" }
+      };
+      appState.activeProfileId = id;
+    } else if(importWiz.target.mode==="append"){
+      cp().mapel = cp().mapel.concat(newMapel);
+    } else {
+      cp().mapel = newMapel;
+    }
+    closeModal();
+    activeTab = "mapel";
+    renderAll();
+  };
+
+  if(importWiz.target.mode==="replace" && cp().mapel.length>0){
+    openConfirmModal(
+      "Timpa data mapel profil aktif?",
+      `Ini akan mengganti ${cp().mapel.length} mapel yang sudah ada di profil "${cp().name}" dengan ${newMapel.length} mapel hasil impor. Data lama akan hilang kecuali sudah diekspor ke JSON.`,
+      doImport,
+      "Timpa Data"
+    );
+  } else {
+    doImport();
+  }
+}
+
+/* =========================== CETAK RESMI (KOP SURAT & TTD) ===========================
+   Menghasilkan lembar Jadwal Pelajaran per-kelas dengan kop surat dan blok tanda
+   tangan Kepala Sekolah + Wali Kelas — format untuk arsip Dapodik. Terpisah dari
+   tombol "Cetak Jadwal" biasa (yang hanya mencetak tab aktif apa adanya).
+   ==================================================================================== */
+
+function formatTanggalIndonesia(isoDateStr){
+  if(!isoDateStr) return "";
+  const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const parts = isoDateStr.split("-").map(Number);
+  const [y,m,d] = parts;
+  if(!y || !m || !d) return isoDateStr;
+  return `${d} ${bulanNama[m-1]} ${y}`;
+}
+
+function openOfficialPrintModal(){
+  closeModal();
+  const ps = appState.printSettings;
+  const todayStr = new Date().toISOString().slice(0,10);
+  const root = document.createElement("div");
+  root.id = "modalRoot";
+  root.className = "modal-backdrop";
+  const box = document.createElement("div");
+  box.className = "modal-box wide";
+  box.innerHTML = `
+    <h3>Cetak Resmi — Kop Surat &amp; Tanda Tangan</h3>
+    <p class="hint">Untuk profil aktif: <b>${cp().name}</b>. Data di bawah disimpan otomatis untuk cetak berikutnya — cukup diisi sekali, kecuali Tahun Ajaran/Semester/Tanggal yang biasanya berubah tiap kali cetak.</p>
+    <div class="modal-field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px 16px;">
+      <div><label>Baris kop 1 (opsional, mis. nama dinas/pemda)</label><input id="opKop1" value="${ps.kopBaris1||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>Baris kop 2 (opsional)</label><input id="opKop2" value="${ps.kopBaris2||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>Nama Sekolah</label><input id="opNamaSekolah" value="${ps.namaSekolah||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>NPSN (opsional)</label><input id="opNpsn" value="${ps.npsn||""}"></div>
+      <div style="grid-column:1/-1;"><label>Alamat Sekolah</label><input id="opAlamat" value="${ps.alamatSekolah||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>Tahun Ajaran</label><input id="opTahunAjaran" value="${ps.tahunAjaran||""}"></div>
+      <div><label>Semester</label>
+        <select id="opSemester">
+          <option ${ps.semester==="Ganjil"?"selected":""}>Ganjil</option>
+          <option ${ps.semester==="Genap"?"selected":""}>Genap</option>
+        </select>
+      </div>
+      <div><label>Tempat (untuk baris tanggal TTD)</label><input id="opTempat" value="${ps.tempat||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>Tanggal</label><input id="opTanggal" type="date" value="${todayStr}"></div>
+      <div><label>Nama Wali Kelas</label><input id="opWaliNama" value="${ps.waliKelasNama||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>NIP Wali Kelas (opsional)</label><input id="opWaliNip" value="${ps.waliKelasNip||""}"></div>
+      <div><label>Nama Kepala Sekolah</label><input id="opKepsekNama" value="${ps.kepsekNama||""}" style="font-family:'IBM Plex Sans',sans-serif;"></div>
+      <div><label>NIP Kepala Sekolah (opsional)</label><input id="opKepsekNip" value="${ps.kepsekNip||""}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="modalCancel">Batal</button>
+      <button class="primary" id="opPrintBtn">🖨 Cetak</button>
+    </div>
+  `;
+  root.appendChild(box);
+  document.body.appendChild(root);
+  root.addEventListener("click", (e)=>{ if(e.target===root) closeModal(); });
+  box.querySelector("#modalCancel").addEventListener("click", closeModal);
+  box.querySelector("#opPrintBtn").addEventListener("click", ()=>{
+    const updated = {
+      kopBaris1: box.querySelector("#opKop1").value.trim(),
+      kopBaris2: box.querySelector("#opKop2").value.trim(),
+      namaSekolah: box.querySelector("#opNamaSekolah").value.trim(),
+      npsn: box.querySelector("#opNpsn").value.trim(),
+      alamatSekolah: box.querySelector("#opAlamat").value.trim(),
+      tahunAjaran: box.querySelector("#opTahunAjaran").value.trim(),
+      semester: box.querySelector("#opSemester").value,
+      tempat: box.querySelector("#opTempat").value.trim(),
+      waliKelasNama: box.querySelector("#opWaliNama").value.trim(),
+      waliKelasNip: box.querySelector("#opWaliNip").value.trim(),
+      kepsekNama: box.querySelector("#opKepsekNama").value.trim(),
+      kepsekNip: box.querySelector("#opKepsekNip").value.trim(),
+    };
+    const tanggalStr = formatTanggalIndonesia(box.querySelector("#opTanggal").value);
+    appState.printSettings = updated;
+    closeModal();
+    renderAll(); // simpan pengaturan supaya terpakai lagi lain kali
+    doOfficialPrint(updated, tanggalStr);
+  });
+}
+
+function doOfficialPrint(settings, tanggalStr){
+  const s = cp();
+  const hariAktif = s.roster.hariAktif;
+  const n = s.roster.jumlahSlot;
+
+  let rosterRows = "";
+  for(let slot=1; slot<=n; slot++){
+    rosterRows += `<tr><td class="op-time">Jam ke-${slot}</td>`;
+    hariAktif.forEach(h=>{
+      const key = rosterKey(h, slot);
+      const mapelId = s.roster.sel[key];
+      const m = mapelId ? s.mapel.find(x=>x.id===mapelId) : null;
+      rosterRows += `<td>${m ? m.nama.toString().replace(/</g,"&lt;") : ""}</td>`;
+    });
+    rosterRows += "</tr>";
+  }
+
+  const area = document.createElement("div");
+  area.id = "officialPrintArea";
+  area.innerHTML = `
+    <div class="op-kop">
+      ${settings.kopBaris1 ? `<div class="op-kop-line">${settings.kopBaris1}</div>` : ""}
+      ${settings.kopBaris2 ? `<div class="op-kop-line">${settings.kopBaris2}</div>` : ""}
+      <h1 class="op-sekolah">${settings.namaSekolah || "NAMA SEKOLAH"}</h1>
+      <div class="op-alamat">${settings.alamatSekolah || ""}${settings.npsn ? " · NPSN "+settings.npsn : ""}</div>
+    </div>
+    <hr class="op-hr">
+    <h2 class="op-title">JADWAL PELAJARAN</h2>
+    <table class="op-meta">
+      <tr><td>Kelas</td><td>: ${s.name}</td><td style="padding-left:24px;">Tahun Ajaran</td><td>: ${settings.tahunAjaran}</td></tr>
+      <tr><td>Semester</td><td>: ${settings.semester}</td><td style="padding-left:24px;">Menit / JP</td><td>: ${s.menitPerJP} menit</td></tr>
+    </table>
+    <table class="op-roster">
+      <thead><tr><th>Waktu</th>${hariAktif.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rosterRows}</tbody>
+    </table>
+    <div class="op-sign">
+      <div class="op-sign-col">
+        <div>Mengetahui,</div>
+        <div>Kepala Sekolah</div>
+        <div class="op-sign-space"></div>
+        <div class="op-sign-name">${settings.kepsekNama || "..........................."}</div>
+        <div class="op-sign-nip">NIP. ${settings.kepsekNip || "..........................."}</div>
+      </div>
+      <div class="op-sign-col">
+        <div>${settings.tempat || "........."}, ${tanggalStr}</div>
+        <div>Wali Kelas</div>
+        <div class="op-sign-space"></div>
+        <div class="op-sign-name">${settings.waliKelasNama || "..........................."}</div>
+        <div class="op-sign-nip">NIP. ${settings.waliKelasNip || "..........................."}</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(area);
+  document.body.classList.add("printing-official");
+
+  const cleanup = ()=>{
+    document.body.classList.remove("printing-official");
+    if(area.parentNode) area.remove();
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
+  // Jaring pengaman untuk browser lama yang tidak memicu "afterprint"
+  setTimeout(()=>{ if(document.body.classList.contains("printing-official")) cleanup(); }, 60000);
+}
+
+/* ============================== TABS =================================== */
+
+const TABS = [
+  {id:"mapel",  label:"Data Mapel & JP/Tahun", desc:"Master data — sumber kebenaran"},
+  {id:"kalender",label:"Kalender Minggu Efektif", desc:"Per bulan, per semester"},
+  {id:"konversi",label:"Konversi ke JP/Minggu", desc:"Otomatis, tinggal cek selisih"},
+  {id:"roster", label:"Jadwal Mingguan (Roster)", desc:"Susun ke hari & jam ke-"},
+  {id:"blok",   label:"Jadwal Blok Rotasi", desc:"Khusus praktik bergilir (SMK)"},
+  {id:"bentrok",label:"Deteksi Bentrok Jadwal", desc:"Guru/ruang sama, jam sama, kelas beda"},
+];
+let activeTab = "mapel";
+
+function renderNav(){
+  const nav = document.getElementById("tabNav");
+  nav.innerHTML = TABS.map((t,i)=>`
+    <div class="tab ${activeTab===t.id?'active':''}" data-tab="${t.id}">
+      <div class="num">${i+1}</div>
+      <div>
+        <div class="label">${t.label}</div>
+        <div class="desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join("");
+  nav.querySelectorAll(".tab").forEach(el=>{
+    el.addEventListener("click", ()=>{ activeTab = el.dataset.tab; renderAll(); });
+  });
+}
+
+/* ============================ PANEL: MAPEL ============================= */
+
+function renderMapelPanel(){
+  const s = cp();
+  const grouped = {};
+  KATEGORI.forEach(k=>grouped[k]=[]);
+  s.mapel.forEach(m=>{ (grouped[m.kategori]=grouped[m.kategori]||[]).push(m); });
+
+  let rows = "";
+  KATEGORI.forEach(kat=>{
+    const list = grouped[kat]||[];
+    if(list.length===0) return;
+    let subIntra=0, subKoku=0;
+    rows += `<tr class="grp-row"><td colspan="8">${kat}</td></tr>`;
+    list.forEach(m=>{
+      subIntra += Number(m.intra||0); subKoku += Number(m.koku||0);
+      rows += `<tr>
+        <td></td>
+        <td><input data-field="nama" data-id="${m.id}" value="${m.nama.replace(/"/g,'&quot;')}"></td>
+        <td><select data-field="kategori" data-id="${m.id}">${KATEGORI.map(k=>`<option ${k===m.kategori?'selected':''}>${k}</option>`).join("")}</select></td>
+        <td><input data-field="guru" data-id="${m.id}" placeholder="—" value="${(m.guru||"").replace(/"/g,'&quot;')}"></td>
+        <td><input data-field="ruang" data-id="${m.id}" placeholder="—" value="${(m.ruang||"").replace(/"/g,'&quot;')}"></td>
+        <td class="num"><input data-field="intra" data-id="${m.id}" type="number" min="0" step="1" value="${m.intra}"></td>
+        <td class="num"><input data-field="koku" data-id="${m.id}" type="number" min="0" step="1" value="${m.koku}"></td>
+        <td class="num mono">${totalJamTahun(m)}</td>
+        <td><button class="inline-x" data-remove="${m.id}" title="Hapus mapel">✕</button></td>
+      </tr>`;
+    });
+    rows += `<tr><td></td><td colspan="4" style="text-align:right;font-weight:600;">Subtotal ${kat}</td>
+      <td class="num mono" style="font-weight:600;">${subIntra}</td>
+      <td class="num mono" style="font-weight:600;">${subKoku}</td>
+      <td class="num mono" style="font-weight:600;">${subIntra+subKoku}</td><td></td></tr>`;
+  });
+
+  const grandIntra = s.mapel.reduce((s2,m)=>s2+Number(m.intra||0),0);
+  const grandKoku = s.mapel.reduce((s2,m)=>s2+Number(m.koku||0),0);
+
+  return `
+    <div class="panel-head">
+      <h2>1 · Data Mapel & Alokasi JP per Tahun</h2>
+      <p>Profil aktif: <b>${s.name}</b>. Ini satu-satunya tempat yang perlu disunting saat regulasi kurikulum berubah — profil lain tidak ikut berubah. Muat preset dari Permendikdasmen 13/2025 sebagai titik awal, lalu tambah/ubah/hapus baris sesuai kebutuhan. Isi <b>Guru</b> dan <b>Ruang</b> (opsional) supaya Tahap 6 · Deteksi Bentrok bisa memeriksa jadwal lintas kelas.</p>
+    </div>
+    <div class="toolbar no-print">
+      <label style="font-size:12px;color:var(--ink-soft);">Muat preset ke profil ini:</label>
+      <select id="presetSelect" style="width:auto;min-width:260px;">
+        <option value="">— pilih preset —</option>
+        ${Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.label}</option>`).join("")}
+      </select>
+      <button id="btnLoadPreset" class="ghost">Muat ke tabel (ganti data mapel)</button>
+    </div>
+    <div class="toolbar no-print">
+      <label style="font-size:12px;color:var(--ink-soft);">Nama profil:</label>
+      <input id="profileNameInput" style="width:240px;font-family:'IBM Plex Sans',sans-serif;" value="${s.name}">
+      <label style="font-size:12px;color:var(--ink-soft); margin-left:14px;">Menit per 1 JP:</label>
+      <input id="menitPerJPInput" type="number" style="width:70px;" value="${s.menitPerJP}">
+      <div class="spacer"></div>
+      <button id="btnDuplicateProfile" class="ghost">⧉ Duplikat profil ini</button>
+    </div>
+    <div class="toolbar no-print">
+      <button id="btnAddMapel" class="primary">+ Tambah Mapel</button>
+    </div>
+    <table class="ledger">
+      <thead><tr>
+        <th style="width:24px;"></th><th>Nama Mata Pelajaran</th><th>Kategori</th>
+        <th>Guru</th><th>Ruang</th>
+        <th class="num">JP Intra/Tahun</th><th class="num">JP Kokurikuler/Tahun</th><th class="num">Total/Tahun</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td></td><td colspan="4">TOTAL KESELURUHAN</td>
+        <td class="num">${grandIntra}</td><td class="num">${grandKoku}</td><td class="num">${grandIntra+grandKoku}</td><td></td>
+      </tr></tfoot>
+    </table>
+  `;
+}
+
+/* =========================== PANEL: KALENDER =========================== */
+
+function renderKalTable(semKey, title){
+  const s = cp();
+  const rows = s.kalender[semKey];
+  let totMinggu=0, totEf=0;
+  const body = rows.map((b,i)=>{
+    totMinggu += Number(b.minggu||0); totEf += Number(b.efektif||0);
+    return `<tr>
+      <td><input data-sem="${semKey}" data-idx="${i}" data-field="bulan" value="${b.bulan}" style="font-family:'IBM Plex Sans',sans-serif;"></td>
+      <td class="num"><input data-sem="${semKey}" data-idx="${i}" data-field="minggu" type="number" min="0" value="${b.minggu}"></td>
+      <td class="num"><input data-sem="${semKey}" data-idx="${i}" data-field="efektif" type="number" min="0" value="${b.efektif}"></td>
+    </tr>`;
+  }).join("");
+  return `<div class="card">
+    <h3>${title}</h3>
+    <table class="ledger">
+      <thead><tr><th>Bulan</th><th class="num">Jml Minggu</th><th class="num">Minggu Efektif</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td>JUMLAH</td><td class="num">${totMinggu}</td><td class="num">${totEf}</td></tr></tfoot>
+    </table>
+  </div>`;
+}
+
+function renderKalenderPanel(){
+  const s = cp();
+  const tw = totalMingguEfektif();
+  const tk = totalMingguKalender();
+  return `
+    <div class="panel-head">
+      <h2>2 · Kalender & Minggu Efektif</h2>
+      <p>Profil aktif: <b>${s.name}</b>. Sesuaikan dengan kalender akademik masing-masing kelas/jenjang — tiap profil boleh punya kalender berbeda (mis. kelas VI/IX/XII biasanya minggu efektifnya lebih pendek karena ujian). Nilai ini menjadi pembagi pada Tahap 3.</p>
+    </div>
+    <div class="kpi">
+      <div class="kpi-box"><div class="v">${tk}</div><div class="l">Total Minggu Kalender / Tahun</div></div>
+      <div class="kpi-box"><div class="v">${tw}</div><div class="l">Total Minggu Efektif / Tahun</div></div>
+    </div>
+    <div class="grid-2">
+      ${renderKalTable("ganjil","Semester Ganjil")}
+      ${renderKalTable("genap","Semester Genap")}
+    </div>
+  `;
+}
+
+/* =========================== PANEL: KONVERSI ============================ */
+
+function renderKonversiPanel(){
+  const s = cp();
+  let rows = "", sumBulat=0;
+  s.mapel.forEach(m=>{
+    const raw = jpPerMingguRaw(m);
+    const bul = jpPerMingguBulat(m);
+    sumBulat += bul.intra + bul.koku;
+    rows += `<tr>
+      <td>${m.nama}</td><td>${m.kategori}</td>
+      <td class="num mono">${totalJamTahun(m)}</td>
+      <td class="num mono">${fmt(raw.total)}</td>
+      <td class="num mono" style="font-weight:600;">${fmt(bul.intra)} <span style="color:var(--ink-soft);">+ ${fmt(bul.koku)}</span></td>
+      <td class="num mono" style="font-weight:700;color:var(--accent-dark);">${fmt(bul.intra+bul.koku)}</td>
+    </tr>`;
+  });
+  const delta = sumBulat - s.targetJPMinggu;
+  const statusHtml = Math.abs(delta) < 0.01
+    ? `<span class="status-ok">SESUAI TARGET</span>`
+    : `<span class="status-bad">SELISIH ${delta>0?'+':''}${fmt(delta)} JP</span>`;
+
+  return `
+    <div class="panel-head">
+      <h2>3 · Konversi JP/Tahun → JP/Minggu</h2>
+      <p>Profil aktif: <b>${s.name}</b>. Rumus: <span class="mono">JP/minggu = JP/tahun ÷ total minggu efektif</span>. Hasil mentah dibulatkan ke kelipatan yang bisa dijadwalkan — status di bawah menunjukkan selisihnya terhadap target JP/minggu profil ini.</p>
+    </div>
+    <div class="toolbar no-print">
+      <label style="font-size:12px;color:var(--ink-soft);">Pembulatan ke kelipatan:</label>
+      <select id="roundingSelect" style="width:auto;">
+        <option value="1" ${s.roundingStep===1?'selected':''}>1 JP</option>
+        <option value="0.5" ${s.roundingStep===0.5?'selected':''}>0,5 JP</option>
+        <option value="0" ${s.roundingStep===0?'selected':''}>Tanpa pembulatan</option>
+      </select>
+      <label style="font-size:12px;color:var(--ink-soft); margin-left:16px;">Target total JP/minggu profil ini:</label>
+      <input id="targetJPInput" type="number" style="width:80px;" value="${s.targetJPMinggu}">
+      <div class="spacer"></div>
+      ${statusHtml}
+    </div>
+    <table class="ledger">
+      <thead><tr>
+        <th>Mata Pelajaran</th><th>Kategori</th><th class="num">JP/Tahun</th>
+        <th class="num">JP/Minggu (mentah)</th><th class="num">Intra + Koku (dibulatkan)</th><th class="num">Total/Minggu</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="5">TOTAL JP/MINGGU (setelah pembulatan)</td><td class="num">${fmt(sumBulat)}</td></tr></tfoot>
+    </table>
+  `;
+}
+
+/* ============================ PANEL: ROSTER ============================= */
+
+function rosterKey(hari, slot){ return hari+"|"+slot; }
+
+function targetPerMapelBulat(){
+  const s = cp();
+  const map = {};
+  s.mapel.forEach(m=>{
+    const b = jpPerMingguBulat(m);
+    map[m.id] = b.intra + b.koku;
+  });
+  return map;
+}
+
+function renderRosterPanel(){
+  const s = cp();
+  const hariAll = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const hariAktif = s.roster.hariAktif;
+  const n = s.roster.jumlahSlot;
+  const target = targetPerMapelBulat();
+  const terisi = {};
+  s.mapel.forEach(m=>terisi[m.id]=0);
+
+  let bodyRows = "";
+  for(let slot=1;slot<=n;slot++){
+    bodyRows += `<tr><td class="time">Jam ke-${slot}</td>`;
+    hariAktif.forEach(h=>{
+      const key = rosterKey(h,slot);
+      const val = s.roster.sel[key] || "";
+      if(val && terisi[val]!==undefined) terisi[val]++;
+      const options = `<option value="">—</option>` + s.mapel.map(m=>`<option value="${m.id}" ${m.id===val?'selected':''}>${m.nama}</option>`).join("");
+      bodyRows += `<td><select data-hari="${h}" data-slot="${slot}" data-roster="1">${options}</select></td>`;
+    });
+    bodyRows += `</tr>`;
+  }
+
+  const rekapRows = s.mapel.map(m=>{
+    const t = target[m.id]||0;
+    const c = terisi[m.id]||0;
+    const ok = Math.abs(c-t) < 0.01;
+    return `<tr><td>${m.nama}</td><td class="num mono">${fmt(t)}</td><td class="num mono">${c}</td>
+      <td class="num">${ok?'<span class="status-ok">PAS</span>':`<span class="status-bad">${c>t?'+':''}${fmt(c-t)}</span>`}</td></tr>`;
+  }).join("");
+
+  return `
+    <div class="panel-head">
+      <h2>4 · Jadwal Mingguan (Roster)</h2>
+      <p>Profil aktif: <b>${s.name}</b>. Target JP/minggu per mapel diambil otomatis dari Tahap 3 milik profil ini. Panel rekap menandai merah bila slot yang diisi belum sama dengan target.</p>
+    </div>
+    <div class="toolbar no-print">
+      <label style="font-size:12px;color:var(--ink-soft);">Hari aktif:</label>
+      ${hariAll.map(h=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+        <input type="checkbox" data-hariaktif="${h}" ${hariAktif.includes(h)?'checked':''} style="width:auto;">${h.slice(0,3)}</label>`).join("")}
+      <label style="font-size:12px;color:var(--ink-soft); margin-left:14px;">Jumlah jam/hari:</label>
+      <input id="jumlahSlotInput" type="number" min="1" max="14" style="width:60px;" value="${n}">
+    </div>
+    <div class="grid-2" style="grid-template-columns:2.4fr 1fr; align-items:flex-start;">
+      <div class="roster-wrap">
+        <table class="roster ledger" style="min-width:640px;">
+          <thead><tr><th>Waktu</th>${hariAktif.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Rekap Alokasi vs Target</h3>
+        <table class="ledger">
+          <thead><tr><th>Mapel</th><th class="num">Target</th><th class="num">Terisi</th><th class="num">Status</th></tr></thead>
+          <tbody>${rekapRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================ PANEL: BLOK ================================ */
+
+function renderBlokPanel(){
+  const s = cp();
+  const b = s.blok;
+  const rombelLabels = Array.from({length:b.jumlahRombel}, (_,i)=>String.fromCharCode(65+i));
+  const nMinggu = b.jumlahMinggu;
+
+  let headMinggu = "";
+  for(let w=1; w<=nMinggu; w++){ headMinggu += `<th class="num">${w}</th>`; }
+
+  let bodyRows = "";
+  rombelLabels.forEach((r,ri)=>{
+    let cells = "";
+    for(let w=1; w<=nMinggu; w++){
+      const isA = (w + ri) % 2 === 1;
+      cells += `<td style="color:${isA?'var(--accent-dark)':'var(--accent2)'};font-weight:600;">${isA?b.kodeA:b.kodeB}</td>`;
+    }
+    bodyRows += `<tr><td style="font-weight:700;">${r}</td>${cells}</tr>`;
+  });
+
+  return `
+    <div class="panel-head">
+      <h2>5 · Jadwal Blok Rotasi (Praktik ⇄ Teori)</h2>
+      <p>Profil aktif: <b>${s.name}</b>. Rombel dibagi bergantian antara kegiatan A dan B tiap minggu, digeser satu langkah antar rombel supaya tidak berebut alat pada minggu yang sama.</p>
+    </div>
+    <div class="toolbar no-print">
+      <label style="font-size:12px;color:var(--ink-soft);">Jumlah rombel:</label>
+      <input id="blokRombelInput" type="number" min="2" max="6" style="width:60px;" value="${b.jumlahRombel}">
+      <label style="font-size:12px;color:var(--ink-soft); margin-left:12px;">Jumlah minggu/tahun:</label>
+      <input id="blokMingguInput" type="number" min="1" max="52" style="width:70px;" value="${b.jumlahMinggu}">
+      <label style="font-size:12px;color:var(--ink-soft); margin-left:12px;">Kode A:</label>
+      <input id="blokKodeAInput" type="text" style="width:60px;" value="${b.kodeA}">
+      <label style="font-size:12px;color:var(--ink-soft);">Kode B:</label>
+      <input id="blokKodeBInput" type="text" style="width:60px;" value="${b.kodeB}">
+    </div>
+    <div class="note">Total minggu efektif profil ini (Tahap 2) adalah <b>${totalMingguEfektif()}</b> minggu — gunakan sebagai acuan jumlah minggu di atas bila rotasi berlangsung sepanjang tahun ajaran.</div>
+    <div class="roster-wrap">
+      <table class="ledger" style="min-width:900px;">
+        <thead><tr><th>Rombel</th>${headMinggu}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ============================ PANEL: BENTROK ============================= */
+/* Memeriksa SEMUA profil sekaligus (bukan hanya profil aktif) — konflik guru
+   atau ruang hanya bisa terjadi ANTAR kelas/profil yang berbeda, pada hari
+   dan jam yang sama. Sumbernya adalah field guru/ruang di Data Mapel (Tahap 1)
+   dari tiap profil, dicocokkan lewat isian roster.sel (Tahap 4) tiap profil. */
+
+function computeBentrok(){
+  const hariOrder = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const guruMap = {}, ruangMap = {};
+
+  Object.values(appState.profiles).forEach(p=>{
+    const mapelById = {};
+    p.mapel.forEach(m=>{ mapelById[m.id] = m; });
+    Object.entries(p.roster.sel || {}).forEach(([key, mapelId])=>{
+      const [hari, slotStr] = key.split("|");
+      const slot = Number(slotStr);
+      const m = mapelById[mapelId];
+      if(!m) return;
+      const guru = (m.guru||"").trim();
+      const ruang = (m.ruang||"").trim();
+      if(guru){
+        const gk = hari+"|"+slot+"|"+guru.toLowerCase();
+        (guruMap[gk] = guruMap[gk]||[]).push({hari, slot, nilai:guru, profileName:p.name, mapelNama:m.nama});
+      }
+      if(ruang){
+        const rk = hari+"|"+slot+"|"+ruang.toLowerCase();
+        (ruangMap[rk] = ruangMap[rk]||[]).push({hari, slot, nilai:ruang, profileName:p.name, mapelNama:m.nama});
+      }
+    });
+  });
+
+  const onlyConflicts = (map)=> Object.values(map).filter(arr=>{
+    const distinctProfiles = new Set(arr.map(x=>x.profileName));
+    return distinctProfiles.size > 1;
+  });
+  const sortFn = (a,b)=> (hariOrder.indexOf(a[0].hari)-hariOrder.indexOf(b[0].hari)) || (a[0].slot-b[0].slot);
+
+  const guruConflicts = onlyConflicts(guruMap).sort(sortFn);
+  const ruangConflicts = onlyConflicts(ruangMap).sort(sortFn);
+  return { guruConflicts, ruangConflicts };
+}
+
+function renderBentrokPanel(){
+  const { guruConflicts, ruangConflicts } = computeBentrok();
+  const anyGuruRuangFilled = Object.values(appState.profiles).some(p=>
+    p.mapel.some(m=>(m.guru||"").trim() || (m.ruang||"").trim())
+  );
+
+  const rowsFor = (conflicts)=> conflicts.map(arr=>{
+    const detail = arr.map(x=>`<div>${x.profileName} — <i>${x.mapelNama}</i></div>`).join("");
+    return `<tr>
+      <td>${arr[0].hari}</td>
+      <td class="num">${arr[0].slot}</td>
+      <td>${arr[0].nilai}</td>
+      <td>${detail}</td>
+    </tr>`;
+  }).join("");
+
+  const guruBlock = guruConflicts.length
+    ? `<table class="ledger">
+        <thead><tr><th>Hari</th><th class="num">Jam ke-</th><th>Guru</th><th>Kelas &amp; Mapel yang Bentrok</th></tr></thead>
+        <tbody>${rowsFor(guruConflicts)}</tbody>
+      </table>`
+    : `<div class="note">Tidak ada bentrok guru terdeteksi.</div>`;
+
+  const ruangBlock = ruangConflicts.length
+    ? `<table class="ledger">
+        <thead><tr><th>Hari</th><th class="num">Jam ke-</th><th>Ruang</th><th>Kelas &amp; Mapel yang Bentrok</th></tr></thead>
+        <tbody>${rowsFor(ruangConflicts)}</tbody>
+      </table>`
+    : `<div class="note">Tidak ada bentrok ruang terdeteksi.</div>`;
+
+  return `
+    <div class="panel-head">
+      <h2>6 · Deteksi Bentrok Jadwal</h2>
+      <p>Memeriksa <b>semua profil/kelas sekaligus</b> — mencari guru atau ruang yang sama terjadwal di dua kelas atau lebih pada hari dan jam yang sama. Isi kolom <b>Guru</b> dan <b>Ruang</b> di panel Data Mapel (Tahap 1) tiap profil supaya deteksi ini bisa berjalan.</p>
+    </div>
+    ${!anyGuruRuangFilled ? `<div class="note" style="border-left-color:var(--accent2);">Belum ada data Guru/Ruang yang diisi di profil manapun. Buka Tahap 1 · Data Mapel pada tiap kelas, isi nama guru dan/atau ruang untuk mapel yang relevan, lalu kembali ke sini.</div>` : ""}
+    <h3 style="margin-top:14px;">Bentrok Guru</h3>
+    ${guruBlock}
+    <h3 style="margin-top:18px;">Bentrok Ruang</h3>
+    ${ruangBlock}
+  `;
+}
+
+/* =============================== RENDER ALL ============================= */
+
+function renderMain(){
+  const main = document.getElementById("mainArea");
+  const panels = {
+    mapel: renderMapelPanel(),
+    kalender: renderKalenderPanel(),
+    konversi: renderKonversiPanel(),
+    roster: renderRosterPanel(),
+    blok: renderBlokPanel(),
+    bentrok: renderBentrokPanel(),
+  };
+  main.innerHTML = TABS.map(t=>`<div class="panel ${t.id===activeTab?'active print-target':''}" id="panel-${t.id}">${panels[t.id]}</div>`).join("");
+}
+
+function renderFooter(){
+  const s = cp();
+  const w = totalMingguEfektif();
+  const grandTahun = s.mapel.reduce((s2,m)=>s2+totalJamTahun(m),0);
+  const sumMinggu = s.mapel.reduce((s2,m)=>{const b=jpPerMingguBulat(m); return s2+b.intra+b.koku;},0);
+  const savedTxt = lastSavedAt
+    ? new Date(lastSavedAt).toLocaleTimeString("id-ID",{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+    : "belum";
+  document.getElementById("footerSummary").innerHTML = `
+    <span>Profil aktif: <b>${s.name}</b></span>
+    <span>Total profil tersimpan: <b>${Object.keys(appState.profiles).length}</b></span>
+    <span>Minggu efektif/tahun: <b>${w}</b></span>
+    <span>Total JP/tahun (mapel): <b>${grandTahun}</b></span>
+    <span>Total JP/minggu (dibulatkan): <b>${fmt(sumMinggu)}</b></span>
+    <span>Target profil ini: <b>${s.targetJPMinggu}</b> JP/minggu</span>
+    <span title="Data tersimpan otomatis di browser ini">💾 Tersimpan otomatis: <b>${savedTxt}</b></span>
+    <span style="margin-left:auto;opacity:.6;">Usep Zaenal Mutaqin, S.Pd. · Ver. 13082026</span>
+  `;
+}
+
+function renderAll(){
+  renderProfileBar();
+  renderNav();
+  renderMain();
+  renderFooter();
+  saveToStorage();
+}
+
+/* =============================== EVENTS =================================== */
+
+document.addEventListener("input", (e)=>{
+  const t = e.target;
+  const s = cp();
+
+  if(t.dataset.field && t.dataset.id){
+    const m = s.mapel.find(x=>x.id===t.dataset.id);
+    if(!m) return;
+    if(t.dataset.field==="intra" || t.dataset.field==="koku") m[t.dataset.field] = Math.max(0, Number(t.value)||0);
+    else m[t.dataset.field] = t.value;
+    if(t.dataset.field==="nama" || t.dataset.field==="guru" || t.dataset.field==="ruang"){ renderFooter(); renderProfileBar(); } else { renderAll(); }
+    return;
+  }
+  if(t.id==="profileNameInput"){ s.name = t.value; renderFooter(); renderProfileBar(); return; }
+  if(t.id==="menitPerJPInput"){ s.menitPerJP = Math.max(1, Number(t.value)||45); return; }
+
+  if(t.dataset.sem && t.dataset.idx!==undefined && t.dataset.field){
+    const row = s.kalender[t.dataset.sem][Number(t.dataset.idx)];
+    row[t.dataset.field] = t.dataset.field==="bulan" ? t.value : Math.max(0, Number(t.value)||0);
+    renderAll();
+    return;
+  }
+
+  if(t.id==="targetJPInput"){ s.targetJPMinggu = Math.max(0, Number(t.value)||0); renderAll(); return; }
+
+  if(t.dataset.roster){
+    const key = rosterKey(t.dataset.hari, t.dataset.slot);
+    if(t.value) s.roster.sel[key] = t.value; else delete s.roster.sel[key];
+    renderMain(); renderFooter();
+    return;
+  }
+  if(t.id==="jumlahSlotInput"){ s.roster.jumlahSlot = Math.max(1, Number(t.value)||1); renderMain(); return; }
+
+  if(t.id==="blokRombelInput"){ s.blok.jumlahRombel = Math.max(2, Number(t.value)||2); renderMain(); return; }
+  if(t.id==="blokMingguInput"){ s.blok.jumlahMinggu = Math.max(1, Number(t.value)||36); renderMain(); return; }
+  if(t.id==="blokKodeAInput"){ s.blok.kodeA = t.value||"A"; renderMain(); return; }
+  if(t.id==="blokKodeBInput"){ s.blok.kodeB = t.value||"B"; renderMain(); return; }
+});
+
+document.addEventListener("change", (e)=>{
+  const t = e.target;
+  const s = cp();
+  if(t.dataset.field==="kategori" && t.dataset.id){
+    const m = s.mapel.find(x=>x.id===t.dataset.id);
+    if(m){ m.kategori = t.value; renderAll(); }
+    return;
+  }
+  if(t.id==="roundingSelect"){ s.roundingStep = Number(t.value); renderAll(); return; }
+  if(t.dataset.hariaktif){
+    const h = t.dataset.hariaktif;
+    if(t.checked){ if(!s.roster.hariAktif.includes(h)) s.roster.hariAktif.push(h); }
+    else { s.roster.hariAktif = s.roster.hariAktif.filter(x=>x!==h); }
+    const order = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    s.roster.hariAktif.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+    renderMain();
+    return;
+  }
+});
+
+document.addEventListener("click", (e)=>{
+  const t = e.target;
+  const s = cp();
+  if(t.dataset.remove){
+    s.mapel = s.mapel.filter(m=>m.id!==t.dataset.remove);
+    renderAll();
+    return;
+  }
+  if(t.id==="btnAddMapel"){
+    s.mapel.push({id:"m"+(mapelSeqGlobal++), kategori:"Umum/Wajib", nama:"Mapel Baru", guru:"", ruang:"", intra:0, koku:0});
+    renderAll();
+    return;
+  }
+  if(t.id==="btnLoadPreset"){
+    const sel = document.getElementById("presetSelect");
+    const key = sel.value;
+    if(!key) return;
+    const p = PRESETS[key];
+    s.mapel = mapelFromPreset(key);
+    s.menitPerJP = p.menitPerJP;
+    s.roster.sel = {};
+    renderAll();
+    return;
+  }
+  if(t.id==="btnDuplicateProfile"){
+    const id = nextProfileId();
+    const clone = JSON.parse(JSON.stringify(s));
+    clone.name = s.name + " (salinan)";
+    appState.profiles[id] = clone;
+    appState.activeProfileId = id;
+    renderAll();
+    return;
+  }
+});
+
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const payload = { exportedAt: new Date().toISOString(), profiles: appState.profiles };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "profil-kurikulum-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+});
+document.getElementById("btnImportTrigger").addEventListener("click", ()=>{
+  document.getElementById("fileImport").click();
+});
+document.getElementById("btnTemplateProfil").addEventListener("click", downloadProfileTemplate);
+document.getElementById("btnTemplateTabel").addEventListener("click", downloadTableTemplate);
+
+document.getElementById("btnImportTable").addEventListener("click", ()=>{
+  document.getElementById("fileImportTable").click();
+});
+document.getElementById("fileImportTable").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = ""; // supaya file yang sama bisa dipilih ulang
+  if(!file) return;
+  await handleImportTableFile(file);
+});
+
+function isValidProfileShape(prof){
+  return prof && typeof prof==="object"
+    && typeof prof.name==="string"
+    && Array.isArray(prof.mapel)
+    && prof.kalender && Array.isArray(prof.kalender.ganjil) && Array.isArray(prof.kalender.genap);
+}
+
+/* Lengkapi field yang mungkin hilang dari file lama/tangan-buatan supaya tidak error saat render */
+function normalizeProfile(prof){
+  if(!prof.roster) prof.roster = { hariAktif:["Senin","Selasa","Rabu","Kamis","Jumat"], jumlahSlot:10, sel:{} };
+  if(!prof.blok) prof.blok = { jumlahRombel:2, jumlahMinggu:36, namaA:"Praktik/Produktif", namaB:"Teori", kodeA:"Prod", kodeB:"Te" };
+  if(typeof prof.menitPerJP!=="number") prof.menitPerJP = 45;
+  if(typeof prof.targetJPMinggu!=="number") prof.targetJPMinggu = 40;
+  if(typeof prof.roundingStep!=="number") prof.roundingStep = 0.5;
+  prof.mapel.forEach(m=>{ if(!m.id) m.id = "m"+(mapelSeqGlobal++); if(typeof m.guru!=="string") m.guru=""; if(typeof m.ruang!=="string") m.ruang=""; });
+  return prof;
+}
+
+document.getElementById("fileImport").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      const incoming = data.profiles || data; // dukung file lama (satu profil) & baru (banyak profil)
+      const candidates = (incoming.mapel && incoming.name) ? [incoming] : Object.values(incoming);
+
+      const valid = candidates.filter(isValidProfileShape);
+      const invalidCount = candidates.length - valid.length;
+      if(valid.length===0){
+        alert("File JSON tidak dikenali sebagai profil kurikulum yang valid (field 'name', 'mapel', atau 'kalender' hilang/salah bentuk).");
+        return;
+      }
+
+      let firstNewId = null;
+      valid.forEach(prof=>{
+        const id = nextProfileId();
+        appState.profiles[id] = normalizeProfile(prof);
+        if(!firstNewId) firstNewId = id;
+      });
+      appState.activeProfileId = firstNewId;
+      renderAll();
+
+      if(invalidCount>0){
+        alert(`${valid.length} profil berhasil diimpor. ${invalidCount} entri dilewati karena bentuknya tidak valid.`);
+      }
+    }catch(err){
+      alert("Gagal membaca file JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+document.getElementById("btnPrint").addEventListener("click", ()=>window.print());
+document.getElementById("btnPrintOfficial").addEventListener("click", openOfficialPrintModal);
+document.getElementById("btnResetData").addEventListener("click", ()=>{
+  openConfirmModal(
+    "Reset semua data?",
+    "Ini akan menghapus semua profil tersimpan di browser ini dan mengembalikan ke 3 profil contoh (SD I, SMP VII, SMK X). Ekspor JSON dulu kalau ingin menyimpan data saat ini.",
+    ()=>{
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  );
+});
+
+/* init */
+renderAll();
+</script>
+</body>
+</html>
